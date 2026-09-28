@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rca-agent"
+version = "0.1.0"
+description = "Autonomous Root Cause Analysis generator powered by Agno — blameless postmortems from Git forensics."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Nelson" }]
+dependencies = [
+    "agno>=1.0.0",
+    "typer[all]>=0.15.0",
+    "rich>=14.0.0",
+    "pydantic>=2.11.0",
+    "pluggy>=1.6.0",
+    "gitpython>=3.1.0",
+    "ollama>=0.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.11.0",
+]
+
+[project.scripts]
+rca-agent = "rca_agent.main:app"
+
+[project.entry-points."rca_agent"]
+rca = "rca_agent.plugin.implementation:RCAPlugin"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
