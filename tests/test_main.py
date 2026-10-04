@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from rich.console import Console
@@ -82,14 +82,17 @@ class TestInvestigateCLI:
         assert "Missing option" in result.output or "commit" in result.output.lower()
 
     def test_investigate_nonexistent_path(self):
-        result = runner.invoke(app, ["investigate", "--commit", "abc1234", "--path", "/nonexistent/path/xyz"])
+        result = runner.invoke(
+            app, ["investigate", "--commit", "abc1234", "--path", "/nonexistent/path/xyz"]
+        )
         assert result.exit_code == 1
         assert "does not exist" in result.output
 
     def test_investigate_successful_run(self, tmp_path, sample_rca):
-        with patch("rca_agent.main.set_repo_path") as mock_set_path, \
-             patch("rca_agent.main.run_investigation", return_value=sample_rca) as mock_investigate:
-
+        with (
+            patch("rca_agent.main.set_repo_path") as mock_set_path,
+            patch("rca_agent.main.run_investigation", return_value=sample_rca) as mock_investigate,
+        ):
             result = runner.invoke(
                 app,
                 [
@@ -112,9 +115,13 @@ class TestInvestigateCLI:
             assert "Preventative Guardrails" in result.output
 
     def test_investigate_handles_agent_failure(self, tmp_path):
-        with patch("rca_agent.main.set_repo_path"), \
-             patch("rca_agent.main.run_investigation", side_effect=RuntimeError("Ollama connection refused")):
-
+        with (
+            patch("rca_agent.main.set_repo_path"),
+            patch(
+                "rca_agent.main.run_investigation",
+                side_effect=RuntimeError("Ollama connection refused"),
+            ),
+        ):
             result = runner.invoke(
                 app,
                 [

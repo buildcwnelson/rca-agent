@@ -12,6 +12,7 @@ import json
 import logging
 
 import pluggy
+from pydantic import ValidationError
 
 from rca_agent.agent.investigator import create_investigator
 from rca_agent.core.forensics import set_repo_path
@@ -87,7 +88,9 @@ class RCAPlugin:
                 "host system.  Use this as your primary evidence source, and "
                 "only call Git forensics tools if you need additional detail."
             )
-            prompt_parts.append(f"--- BEGIN CONTEXT ---\n{pre_assembled_context}\n--- END CONTEXT ---")
+            prompt_parts.append(
+                f"--- BEGIN CONTEXT ---\n{pre_assembled_context}\n--- END CONTEXT ---"
+            )
         else:
             prompt_parts.append(
                 "Use your Git forensics tools to gather evidence: retrieve "
@@ -113,13 +116,13 @@ class RCAPlugin:
             try:
                 rca = BlamelessRCA.model_validate_json(result.content)
                 return rca.model_dump()
-            except Exception:
+            except (ValidationError, ValueError):
                 # Attempt dict-based parsing
                 try:
                     data = json.loads(result.content)
                     rca = BlamelessRCA.model_validate(data)
                     return rca.model_dump()
-                except Exception:
+                except (ValidationError, ValueError, json.JSONDecodeError):
                     log.warning("Could not parse agent output as BlamelessRCA")
                     return {
                         "executive_summary": result.content,

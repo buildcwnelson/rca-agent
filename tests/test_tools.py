@@ -19,17 +19,21 @@ def scratch_repo(tmp_path):
     repo.config_writer().set_value("user", "email", "test@test.com").release()
 
     f = tmp_path / "app.py"
-    f.write_text(textwrap.dedent("""\
+    f.write_text(
+        textwrap.dedent("""\
         def main():
             print("v1")
-    """))
+    """)
+    )
     repo.index.add(["app.py"])
     c1 = repo.index.commit("feat: initial app")
 
-    f.write_text(textwrap.dedent("""\
+    f.write_text(
+        textwrap.dedent("""\
         def main():
             print("v2")
-    """))
+    """)
+    )
     repo.index.add(["app.py"])
     c2 = repo.index.commit("fix: update to v2")
 

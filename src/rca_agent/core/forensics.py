@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from git import InvalidGitRepositoryError, Repo
+from git import Repo
 from git.exc import GitCommandError
 
 # ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ def _get_repo(repo_path: str | None = None) -> Repo:
     InvalidGitRepositoryError
         If the resolved path is not inside a valid Git repository.
     """
-    global _repo  # noqa: PLW0603
+    global _repo
 
     if _repo is not None and repo_path is None:
         return _repo

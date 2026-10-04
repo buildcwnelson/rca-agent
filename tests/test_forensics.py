@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import textwrap
 
 import pytest
@@ -26,24 +25,28 @@ def scratch_repo(tmp_path):
 
     # --- Commit 1: initial file ---
     hello = tmp_path / "hello.py"
-    hello.write_text(textwrap.dedent("""\
+    hello.write_text(
+        textwrap.dedent("""\
         def greet():
             return "hello"
-    """))
+    """)
+    )
     repo.index.add(["hello.py"])
     c1 = repo.index.commit("feat: add greet function")
 
     # --- Commit 2: modify the file ---
-    hello.write_text(textwrap.dedent("""\
+    hello.write_text(
+        textwrap.dedent("""\
         def greet(name: str = "world"):
             return f"hello {name}"
-    """))
+    """)
+    )
     repo.index.add(["hello.py"])
     c2 = repo.index.commit("refactor: greet accepts a name parameter")
 
     # --- Commit 3: add a second file ---
     utils = tmp_path / "utils.py"
-    utils.write_text('MAGIC = 42\n')
+    utils.write_text("MAGIC = 42\n")
     repo.index.add(["utils.py"])
     c3 = repo.index.commit("feat: add utils module")
 

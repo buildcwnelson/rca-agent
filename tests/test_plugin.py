@@ -182,9 +182,7 @@ class TestPluggyIntegration:
             pm.add_hookspecs(RCAHookSpec)
             pm.register(RCAPlugin())
 
-            results = pm.hook.on_violation_detected(
-                violation_payload=violation_payload
-            )
+            results = pm.hook.on_violation_detected(violation_payload=violation_payload)
 
             assert len(results) == 1
             rca_dict = results[0]

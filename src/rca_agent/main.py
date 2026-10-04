@@ -7,9 +7,7 @@ rich, beautifully styled terminal postmortems.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -34,10 +32,9 @@ console = Console()
 @app.callback()
 def main_callback() -> None:
     """Autonomous Root Cause Analysis generator powered by Agno."""
-    pass
 
 
-def render_postmortem(rca: BlamelessRCA, custom_console: Optional[Console] = None) -> None:
+def render_postmortem(rca: BlamelessRCA, custom_console: Console | None = None) -> None:
     """Render a structured BlamelessRCA report cleanly to the terminal.
 
     Utilizes Rich Panels, Markdown, and distinct color-coding for
@@ -46,7 +43,9 @@ def render_postmortem(rca: BlamelessRCA, custom_console: Optional[Console] = Non
     out = custom_console or console
 
     # Header Banner
-    header_text = Text("🔍 BLAMELESS ROOT CAUSE ANALYSIS POSTMORTEM", style="bold white on blue", justify="center")
+    header_text = Text(
+        "🔍 BLAMELESS ROOT CAUSE ANALYSIS POSTMORTEM", style="bold white on blue", justify="center"
+    )
     out.print()
     out.print(Panel(header_text, border_style="blue", padding=(1, 2)))
 
@@ -90,7 +89,9 @@ def render_postmortem(rca: BlamelessRCA, custom_console: Optional[Console] = Non
     blast_lines = []
     for item in rca.blast_radius:
         blast_lines.append(f"[bold red]⚠️ IMPACT:[/bold red] [red]{item}[/red]")
-    blast_text = Text.from_markup("\n".join(blast_lines) if blast_lines else "[dim]No downstream blast radius detected.[/dim]")
+    blast_text = Text.from_markup(
+        "\n".join(blast_lines) if blast_lines else "[dim]No downstream blast radius detected.[/dim]"
+    )
     out.print(
         Panel(
             blast_text,
@@ -104,7 +105,9 @@ def render_postmortem(rca: BlamelessRCA, custom_console: Optional[Console] = Non
     actions_lines = []
     for i, action in enumerate(rca.preventative_action_items, 1):
         actions_lines.append(f"[bold green]🛡️ [{i}][/bold green] [green]{action}[/green]")
-    actions_text = Text.from_markup("\n".join(actions_lines) if actions_lines else "[dim]No preventative actions defined.[/dim]")
+    actions_text = Text.from_markup(
+        "\n".join(actions_lines) if actions_lines else "[dim]No preventative actions defined.[/dim]"
+    )
     out.print(
         Panel(
             actions_text,
@@ -141,20 +144,29 @@ def investigate(
     """Execute an autonomous Root Cause Analysis on a given commit."""
     repo_path = Path(path).expanduser().resolve()
     if not repo_path.exists():
-        console.print(f"[bold red]Error:[/bold red] Repository path '{repo_path}' does not exist.", style="red")
+        console.print(
+            f"[bold red]Error:[/bold red] Repository path '{repo_path}' does not exist.",
+            style="red",
+        )
         raise typer.Exit(code=1)
 
-    console.print(f"[bold blue]Initiating RCA investigation for commit:[/bold blue] [cyan]{commit}[/cyan]")
+    console.print(
+        f"[bold blue]Initiating RCA investigation for commit:[/bold blue] [cyan]{commit}[/cyan]"
+    )
     console.print(f"[dim]Repository:[/dim] {repo_path}")
     console.print(f"[dim]Reasoning Model:[/dim] {model}\n")
 
     try:
         set_repo_path(str(repo_path))
     except Exception as exc:
-        console.print(f"[bold red]Forensics Error:[/bold red] Failed to initialize repository: {exc}")
+        console.print(
+            f"[bold red]Forensics Error:[/bold red] Failed to initialize repository: {exc}"
+        )
         raise typer.Exit(code=1) from exc
 
-    with console.status("[bold green]Executing Git forensics and 5 Whys analysis...", spinner="dots"):
+    with console.status(
+        "[bold green]Executing Git forensics and 5 Whys analysis...", spinner="dots"
+    ):
         try:
             rca_result = run_investigation(commit_hash=commit, model_id=model)
         except Exception as exc:
