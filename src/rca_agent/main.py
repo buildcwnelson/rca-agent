@@ -21,6 +21,7 @@ from rich.text import Text
 from rca_agent.agent.investigator import run_investigation
 from rca_agent.core.forensics import set_repo_path
 from rca_agent.models.schema import BlamelessRCA
+from rca_agent.reports.pdf import generate_rca_pdf
 
 # Automatically load environment variables from .env
 load_dotenv()
@@ -151,6 +152,11 @@ def investigate(
         "-k",
         help="Google AI Studio API key (overrides GEMINI_API_KEY environment variable).",
     ),
+    pdf: str | None = typer.Option(
+        None,
+        "--pdf",
+        help="Optional file path to output an executive PDF postmortem report.",
+    ),
 ) -> None:
     """Execute an autonomous Root Cause Analysis on a given commit."""
     repo_path = Path(path).expanduser().resolve()
@@ -192,6 +198,24 @@ def investigate(
             raise typer.Exit(code=1) from exc
 
     render_postmortem(rca_result)
+
+    if pdf:
+        pdf_file = Path(pdf).expanduser().resolve()
+        try:
+            generate_rca_pdf(
+                rca=rca_result,
+                output_path=pdf_file,
+                commit_hash=commit,
+                repo_name=repo_path.name,
+                model_name=model,
+            )
+            console.print(
+                f"[bold green]✓ Executive PDF report generated:[/bold green] [cyan]{pdf_file}[/cyan]\n"
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            console.print(
+                f"[bold red]PDF Generation Warning:[/bold red] Failed to generate PDF: {exc}"
+            )
 
 
 if __name__ == "__main__":

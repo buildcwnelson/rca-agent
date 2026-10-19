@@ -140,3 +140,27 @@ class TestInvestigateCLI:
             assert result.exit_code == 1
             assert "Investigation Failed" in result.output
             assert "Ollama connection refused" in result.output
+
+    def test_investigate_generates_pdf(self, tmp_path, sample_rca):
+        pdf_out = tmp_path / "output_report.pdf"
+        with (
+            patch("rca_agent.main.set_repo_path"),
+            patch("rca_agent.main.run_investigation", return_value=sample_rca),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "investigate",
+                    "--commit",
+                    "deadbeef",
+                    "--path",
+                    str(tmp_path),
+                    "--pdf",
+                    str(pdf_out),
+                ],
+            )
+
+            assert result.exit_code == 0
+            assert "Executive PDF report generated" in result.output
+            assert pdf_out.exists()
+            assert pdf_out.stat().st_size > 1000
