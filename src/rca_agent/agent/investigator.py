@@ -1,17 +1,23 @@
 """The "5 Whys" Investigator Agent.
 
-Configures an Agno ``Agent`` backed by a local Ollama reasoning model,
+Configures an Agno ``Agent`` backed by Google Gemini (Google AI Studio),
 bound to Git forensics tools, and constrained to produce output conforming
 to the ``BlamelessRCA`` Pydantic schema.
 """
 
 from __future__ import annotations
 
+import os
+
 from agno.agent import Agent
-from agno.models.ollama import Ollama
+from agno.models.google import Gemini
+from dotenv import load_dotenv
 
 from rca_agent.agent.tools import GitForensicsTools
 from rca_agent.models.schema import BlamelessRCA
+
+# Load environment variables from .env automatically
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # System instructions for the investigator
@@ -57,29 +63,31 @@ framework, and generate actionable preventative guardrails.
 
 
 def create_investigator(
-    model_id: str = "qwen2.5-coder",
-    host: str | None = None,
+    model_id: str = "gemini-2.5-flash",
+    api_key: str | None = None,
 ) -> Agent:
     """Create and return a configured investigator agent.
 
     Parameters
     ----------
     model_id:
-        Ollama model identifier (e.g. ``llama3``, ``qwen2.5-coder``).
-    host:
-        Optional Ollama host URL.  Defaults to ``http://localhost:11434``.
+        Gemini model identifier (e.g. ``gemini-2.5-flash``, ``gemini-2.5-pro``, ``gemini-2.0-flash``).
+    api_key:
+        Optional Google AI Studio API key. Defaults to the ``GEMINI_API_KEY``
+        or ``GOOGLE_API_KEY`` environment variable.
 
     Returns
     -------
     Agent
         A fully configured Agno agent ready to run investigations.
     """
-    model_kwargs = {"id": model_id}
-    if host:
-        model_kwargs["host"] = host
+    resolved_api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    model_kwargs: dict[str, str] = {"id": model_id}
+    if resolved_api_key:
+        model_kwargs["api_key"] = resolved_api_key
 
     return Agent(
-        model=Ollama(**model_kwargs),
+        model=Gemini(**model_kwargs),
         tools=[GitForensicsTools()],
         instructions=SYSTEM_INSTRUCTIONS,
         output_schema=BlamelessRCA,
@@ -88,7 +96,11 @@ def create_investigator(
     )
 
 
-def run_investigation(commit_hash: str, model_id: str = "qwen2.5-coder") -> BlamelessRCA:
+def run_investigation(
+    commit_hash: str,
+    model_id: str = "gemini-2.5-flash",
+    api_key: str | None = None,
+) -> BlamelessRCA:
     """Run a full investigation and return the structured postmortem.
 
     This is the primary entry point for programmatic use.  It creates an
@@ -99,14 +111,16 @@ def run_investigation(commit_hash: str, model_id: str = "qwen2.5-coder") -> Blam
     commit_hash:
         The Git SHA of the suspect commit to investigate.
     model_id:
-        Ollama model identifier.
+        Google Gemini model identifier.
+    api_key:
+        Optional Google AI Studio API key.
 
     Returns
     -------
     BlamelessRCA
         The structured blameless postmortem.
     """
-    agent = create_investigator(model_id=model_id)
+    agent = create_investigator(model_id=model_id, api_key=api_key)
     result = agent.run(
         f"Investigate commit {commit_hash}. Retrieve its diff, examine the "
         f"surrounding commit history, and if needed use blame to trace the "

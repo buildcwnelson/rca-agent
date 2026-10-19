@@ -7,9 +7,11 @@ rich, beautifully styled terminal postmortems.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import typer
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -19,6 +21,9 @@ from rich.text import Text
 from rca_agent.agent.investigator import run_investigation
 from rca_agent.core.forensics import set_repo_path
 from rca_agent.models.schema import BlamelessRCA
+
+# Automatically load environment variables from .env
+load_dotenv()
 
 app = typer.Typer(
     name="rca-agent",
@@ -135,10 +140,16 @@ def investigate(
         help="Path to the target Git repository root.",
     ),
     model: str = typer.Option(
-        "qwen2.5-coder",
+        "gemini-2.5-flash",
         "--model",
         "-m",
-        help="Ollama model identifier to use for reasoning.",
+        help="Google Gemini model identifier from Google AI Studio (e.g. gemini-2.5-flash, gemini-2.5-pro).",
+    ),
+    api_key: str | None = typer.Option(
+        None,
+        "--api-key",
+        "-k",
+        help="Google AI Studio API key (overrides GEMINI_API_KEY environment variable).",
     ),
 ) -> None:
     """Execute an autonomous Root Cause Analysis on a given commit."""
@@ -149,6 +160,13 @@ def investigate(
             style="red",
         )
         raise typer.Exit(code=1)
+
+    resolved_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not resolved_key:
+        console.print(
+            "[bold yellow]Notice:[/bold yellow] No GEMINI_API_KEY or GOOGLE_API_KEY detected in your environment or .env file.\n"
+            "Please ensure you have configured your Google AI Studio API key in .env or pass --api-key.\n"
+        )
 
     console.print(
         f"[bold blue]Initiating RCA investigation for commit:[/bold blue] [cyan]{commit}[/cyan]"
@@ -168,7 +186,7 @@ def investigate(
         "[bold green]Executing Git forensics and 5 Whys analysis...", spinner="dots"
     ):
         try:
-            rca_result = run_investigation(commit_hash=commit, model_id=model)
+            rca_result = run_investigation(commit_hash=commit, model_id=model, api_key=resolved_key)
         except Exception as exc:
             console.print(f"\n[bold red]Investigation Failed:[/bold red] {exc}")
             raise typer.Exit(code=1) from exc

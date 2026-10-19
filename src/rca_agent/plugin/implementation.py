@@ -56,7 +56,8 @@ class RCAPlugin:
         severity = violation_payload.get("severity", "warning")
         pre_assembled_context = violation_payload.get("context", "")
         repo_path = violation_payload.get("repo_path")
-        model_id = violation_payload.get("model_id", "qwen2.5-coder")
+        model_id = violation_payload.get("model_id", "gemini-2.5-flash")
+        api_key = violation_payload.get("api_key")
 
         log.info(
             "RCA plugin invoked for commit %s (severity=%s, files=%d)",
@@ -105,7 +106,7 @@ class RCAPlugin:
         prompt = "\n\n".join(prompt_parts)
 
         # Run the investigator
-        agent = create_investigator(model_id=model_id)
+        agent = create_investigator(model_id=model_id, api_key=api_key)
         result = agent.run(prompt)
 
         # Parse and serialize the output

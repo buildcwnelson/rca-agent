@@ -23,8 +23,9 @@ class TestCreateInvestigator:
     """Verify agent factory configuration."""
 
     def test_agent_has_correct_model(self):
-        agent = create_investigator(model_id="llama3")
-        assert agent.model.id == "llama3"
+        agent = create_investigator(model_id="gemini-2.5-pro")
+        assert agent.model.id == "gemini-2.5-pro"
+        assert agent.model.provider == "Google"
 
     def test_agent_has_forensics_tools(self):
         agent = create_investigator()
@@ -50,9 +51,14 @@ class TestCreateInvestigator:
         assert "Assess Blast Radius" in SYSTEM_INSTRUCTIONS
         assert "Prescribe Prevention" in SYSTEM_INSTRUCTIONS
 
-    def test_default_model_is_qwen(self):
+    def test_default_model_is_gemini(self):
         agent = create_investigator()
-        assert agent.model.id == "qwen2.5-coder"
+        assert agent.model.id == "gemini-2.5-flash"
+        assert agent.model.provider == "Google"
+
+    def test_agent_uses_custom_api_key(self):
+        agent = create_investigator(api_key="custom-gemini-key")
+        assert agent.model.api_key == "custom-gemini-key"
 
 
 class TestRunInvestigation:
