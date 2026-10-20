@@ -92,7 +92,7 @@ def get_commit_diff(commit_hash: str) -> str:
         return diff_text or "(empty diff)"
     except GitCommandError as exc:
         return f"[forensics error] Failed to retrieve diff for {commit_hash}: {exc}"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return f"[forensics error] Unexpected error: {exc}"
 
 
@@ -127,7 +127,7 @@ def get_blame_context(filepath: str, line_start: int, line_end: int) -> str:
         return blame_output or "(no blame data)"
     except GitCommandError as exc:
         return f"[forensics error] Blame failed for {filepath}:{line_start}-{line_end}: {exc}"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return f"[forensics error] Unexpected error: {exc}"
 
 
@@ -176,5 +176,5 @@ def get_recent_logs(target_hash: str, limit: int = 5) -> str:
             return log_output or "(no preceding commits found)"
         except GitCommandError as exc:
             return f"[forensics error] Log retrieval failed for {target_hash}: {exc}"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return f"[forensics error] Unexpected error: {exc}"

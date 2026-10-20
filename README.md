@@ -6,12 +6,15 @@ Generates blameless postmortems from Git forensics using AI-driven "5 Whys" inve
 
 ## Features
 
-- **Git Forensics** — Extracts commit diffs, blame context, and log timelines
-- **5 Whys Investigation** — AI agent autonomously drills into root causes using Google Gemini
-- **Blameless Postmortems** — Structured output via Pydantic schema
+- **Autonomous Incident Triage** — Pinpoint culprit commits directly from crash logs, stack traces, or stdin pipes
+- **Multi-Commit Bisection** — Scan release windows (`--between v1.0..v1.1`) and rank suspect commits against incident symptoms
+- **LGTM Stack Support** — Ingest Grafana Loki log query exports and Grafana Alerting webhooks
+- **Automated Guardrail Generator** — Generate executable pytest reproduction tests and preventative code guardrails
+- **Multi-Provider AI** — Native support for OpenRouter, Google Gemini, OpenAI, and local Ollama
+- **Git Forensics** — Deep commit diffs, blame tracking, and chronological decay reconstruction
 - **Executive PDF Reports** — High-resolution postmortem PDF generation with custom typography and alert callouts
+- **Team Collaboration** — Automated Slack incident card alerts and formatted GitHub PR comments
 - **Plugin Architecture** — Pluggy-based hook system for integration with external analyzers
-- **Rich CLI** — Beautiful terminal output with color-coded blast radius and action items
 
 ## Configuration
 
@@ -36,17 +39,47 @@ pip install -e ".[dev]"
 
 ## Usage
 
-### Standalone CLI
+### 1. Autonomous Triage (From Error Logs or Stack Traces)
+
+No commit SHA needed. `rca-agent` parses the trace, finds the culprit commit using `git blame`, and runs the investigation:
 
 ```bash
-# Auto-detects provider from your active environment variables
+# Triage a crash log file
+rca-agent triage --log ./crash.log --path /path/to/repo --pdf ./report.pdf
+
+# Triage from piped terminal output (CI / Kubernetes / Docker logs)
+cat production-error.log | rca-agent triage --path /path/to/repo
+
+# Triage directly from Grafana Loki JSON or Alert Webhook payload
+rca-agent triage --lgtm ./loki-export.json --path /path/to/repo
+```
+
+### 2. Multi-Commit Release Window Bisection
+
+Scan a deployment window of commits and isolate the breaking change matching a symptom:
+
+```bash
+rca-agent investigate \
+  --between v1.2.0..HEAD \
+  --symptom "Payment gateway timeout on checkout" \
+  --path /path/to/repo \
+  --pdf ./report.pdf
+```
+
+### 3. Commit Investigation & Automated Guardrails
+
+```bash
+# Basic investigation
 rca-agent investigate --commit <hash> --path /path/to/repo
 
-# Use OpenRouter explicitly with any model:
-rca-agent investigate --commit <hash> --provider openrouter --model meta-llama/llama-3.3-70b-instruct
-
-# Generate an Executive PDF Report
-rca-agent investigate --commit <hash> --path /path/to/repo --pdf ./report.pdf
+# Full enterprise workflow: PDF + Automated Regression Test + Slack Alert
+rca-agent investigate \
+  --commit <hash> \
+  --path /path/to/repo \
+  --pdf ./report.pdf \
+  --generate-test ./tests/ \
+  --slack-webhook https://hooks.slack.com/services/... \
+  --markdown-pr ./pr_comment.md
 ```
 
 ### Docker Quickstart (Zero-Install)

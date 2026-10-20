@@ -17,3 +17,4 @@ TEMP_*.md
 output/
 *.pdf
 .DS_Store
+uv.lock
