@@ -7,12 +7,11 @@ to the ``BlamelessRCA`` Pydantic schema.
 
 from __future__ import annotations
 
-import os
-
 from agno.agent import Agent
-from agno.models.google import Gemini
 from dotenv import load_dotenv
+from pydantic import ValidationError
 
+from rca_agent.agent.factory import create_model_instance, resolve_provider_and_key
 from rca_agent.agent.tools import GitForensicsTools
 from rca_agent.models.schema import BlamelessRCA
 
@@ -65,31 +64,35 @@ framework, and generate actionable preventative guardrails.
 def create_investigator(
     model_id: str | None = None,
     api_key: str | None = None,
+    provider: str | None = None,
 ) -> Agent:
     """Create and return a configured investigator agent.
 
     Parameters
     ----------
     model_id:
-        Gemini model identifier (e.g. ``gemini-3.6-flash``, ``gemini-2.5-pro``).
-        Defaults to the ``GEMINI_MODEL`` environment variable, then ``gemini-3.6-flash``.
+        Model identifier (e.g. ``gemini-3.6-flash``, ``anthropic/claude-3.5-sonnet``, ``gpt-4o``).
     api_key:
-        Optional Google AI Studio API key. Defaults to the ``GEMINI_API_KEY``
-        or ``GOOGLE_API_KEY`` environment variable.
+        Optional API key. Defaults to the respective environment variable.
+    provider:
+        Optional provider override (``gemini``, ``openrouter``, ``openai``, ``ollama``).
 
     Returns
     -------
     Agent
         A fully configured Agno agent ready to run investigations.
     """
-    resolved_model = model_id or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-    resolved_api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    model_kwargs: dict[str, str] = {"id": resolved_model}
-    if resolved_api_key:
-        model_kwargs["api_key"] = resolved_api_key
+    resolved_provider, resolved_model, resolved_api_key = resolve_provider_and_key(
+        provider=provider, model=model_id, api_key=api_key
+    )
+    model = create_model_instance(
+        provider=resolved_provider,
+        model_id=resolved_model,
+        api_key=resolved_api_key,
+    )
 
     return Agent(
-        model=Gemini(**model_kwargs),
+        model=model,
         tools=[GitForensicsTools()],
         instructions=SYSTEM_INSTRUCTIONS,
         output_schema=BlamelessRCA,
@@ -102,27 +105,27 @@ def run_investigation(
     commit_hash: str,
     model_id: str | None = None,
     api_key: str | None = None,
+    provider: str | None = None,
 ) -> BlamelessRCA:
     """Run a full investigation and return the structured postmortem.
-
-    This is the primary entry point for programmatic use.  It creates an
-    agent, feeds it the commit hash, and returns the parsed ``BlamelessRCA``.
 
     Parameters
     ----------
     commit_hash:
         The Git SHA of the suspect commit to investigate.
     model_id:
-        Google Gemini model identifier.
+        Model identifier.
     api_key:
-        Optional Google AI Studio API key.
+        Optional API key.
+    provider:
+        Optional provider override (gemini, openrouter, openai, ollama).
 
     Returns
     -------
     BlamelessRCA
         The structured blameless postmortem.
     """
-    agent = create_investigator(model_id=model_id, api_key=api_key)
+    agent = create_investigator(model_id=model_id, api_key=api_key, provider=provider)
     result = agent.run(
         f"Investigate commit {commit_hash}. Retrieve its diff, examine the "
         f"surrounding commit history, and if needed use blame to trace the "
@@ -136,7 +139,7 @@ def run_investigation(
     if isinstance(result.content, str):
         try:
             return BlamelessRCA.model_validate_json(result.content)
-        except Exception:
+        except (ValidationError, ValueError):
             raise RuntimeError(f"Agent response could not be parsed as RCA schema: {result.content}")
 
     # Final fallback: try dict-based construction

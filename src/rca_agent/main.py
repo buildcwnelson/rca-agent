@@ -7,7 +7,6 @@ rich, beautifully styled terminal postmortems.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import typer
@@ -18,6 +17,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.text import Text
 
+from rca_agent.agent.factory import resolve_provider_and_key
 from rca_agent.agent.investigator import run_investigation
 from rca_agent.core.forensics import set_repo_path
 from rca_agent.models.schema import BlamelessRCA
@@ -140,17 +140,23 @@ def investigate(
         "-p",
         help="Path to the target Git repository root.",
     ),
+    provider: str | None = typer.Option(
+        None,
+        "--provider",
+        "-P",
+        help="LLM provider: gemini, openrouter, openai, ollama (auto-detected if omitted).",
+    ),
     model: str | None = typer.Option(
         None,
         "--model",
         "-m",
-        help="Gemini model (e.g. gemini-2.0-flash, gemini-2.5-pro). Defaults to GEMINI_MODEL env var.",
+        help="Model ID (e.g. gemini-3.6-flash, anthropic/claude-3.5-sonnet, gpt-4o).",
     ),
     api_key: str | None = typer.Option(
         None,
         "--api-key",
         "-k",
-        help="Google AI Studio API key (overrides GEMINI_API_KEY environment variable).",
+        help="API key for the selected provider (overrides environment variables).",
     ),
     pdf: str | None = typer.Option(
         None,
@@ -167,19 +173,25 @@ def investigate(
         )
         raise typer.Exit(code=1)
 
-    resolved_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    resolved_model = model or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-    if not resolved_key:
+    resolved_provider, resolved_model, resolved_key = resolve_provider_and_key(
+        provider=provider, model=model, api_key=api_key
+    )
+
+    if resolved_provider != "ollama" and not resolved_key:
         console.print(
-            "[bold yellow]Notice:[/bold yellow] No GEMINI_API_KEY or GOOGLE_API_KEY detected in your environment or .env file.\n"
-            "Please ensure you have configured your Google AI Studio API key in .env or pass --api-key.\n"
+            f"[bold yellow]Notice:[/bold yellow] No API key detected for provider '[bold cyan]{resolved_provider}[/bold cyan]'.\n"
+            "Configure one of the following environment variables (or pass --api-key):\n"
+            "  • OpenRouter:  OPENROUTER_API_KEY\n"
+            "  • Gemini:      GEMINI_API_KEY (or GOOGLE_API_KEY)\n"
+            "  • OpenAI:      OPENAI_API_KEY\n"
         )
 
     console.print(
         f"[bold blue]Initiating RCA investigation for commit:[/bold blue] [cyan]{commit}[/cyan]"
     )
     console.print(f"[dim]Repository:[/dim] {repo_path}")
-    console.print(f"[dim]Reasoning Model:[/dim] {resolved_model}\n")
+    console.print(f"[dim]Provider:[/dim]   {resolved_provider}")
+    console.print(f"[dim]Model:[/dim]      {resolved_model}\n")
 
     try:
         set_repo_path(str(repo_path))
@@ -194,7 +206,10 @@ def investigate(
     ):
         try:
             rca_result = run_investigation(
-                commit_hash=commit, model_id=resolved_model, api_key=resolved_key
+                commit_hash=commit,
+                model_id=resolved_model,
+                api_key=resolved_key,
+                provider=resolved_provider,
             )
         except Exception as exc:
             console.print(f"\n[bold red]Investigation Failed:[/bold red] {exc}")
@@ -210,7 +225,7 @@ def investigate(
                 output_path=pdf_file,
                 commit_hash=commit,
                 repo_name=repo_path.name,
-                model_name=resolved_model,
+                model_name=f"{resolved_provider.title()}: {resolved_model}",
             )
             console.print(
                 f"[bold green]✓ Executive PDF report generated:[/bold green] [cyan]{pdf_file}[/cyan]\n"

@@ -15,14 +15,18 @@ Generates blameless postmortems from Git forensics using AI-driven "5 Whys" inve
 
 ## Configuration
 
-Set your Google AI Studio API key in a `.env` file (or export it in your environment):
+`rca-agent` automatically auto-detects whichever provider API key is present in your environment or `.env` file:
 
 ```bash
 cp .env.example .env
-# Edit .env with your key:
-# GEMINI_API_KEY=your_key_here
-# GEMINI_MODEL=gemini-3.6-flash
 ```
+
+| Provider | Environment Variable | Default Model | Description |
+|---|---|---|---|
+| **OpenRouter** | `OPENROUTER_API_KEY` | `anthropic/claude-3.5-sonnet` | Universal router: Claude, Llama 3, DeepSeek, Mistral |
+| **Google Gemini** | `GEMINI_API_KEY` | `gemini-3.6-flash` | Fast, high-token Google AI Studio reasoning |
+| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` | GPT-4o / o-series |
+| **Ollama** | `OLLAMA_HOST` | `qwen2.5-coder:7b` | Air-gapped / local offline execution |
 
 ## Installation
 
@@ -35,10 +39,13 @@ pip install -e ".[dev]"
 ### Standalone CLI
 
 ```bash
-# Terminal investigation
+# Auto-detects provider from your active environment variables
 rca-agent investigate --commit <hash> --path /path/to/repo
 
-# Investigation with Executive PDF Report
+# Use OpenRouter explicitly with any model:
+rca-agent investigate --commit <hash> --provider openrouter --model meta-llama/llama-3.3-70b-instruct
+
+# Generate an Executive PDF Report
 rca-agent investigate --commit <hash> --path /path/to/repo --pdf ./report.pdf
 ```
 
@@ -47,8 +54,25 @@ rca-agent investigate --commit <hash> --path /path/to/repo --pdf ./report.pdf
 Run investigations on any local repository using Docker without needing Python or local dependencies:
 
 ```bash
+# Using OpenRouter:
 docker run --rm \
-  -e GEMINI_API_KEY="your-gemini-api-key" \
+  -e OPENROUTER_API_KEY="sk-or-v1-..." \
+  -v /path/to/target/repo:/repo \
+  -v $(pwd)/output:/output \
+  buildcwnelson/rca-agent:latest \
+  investigate --commit <hash> --path /repo --pdf /output/report.pdf
+
+# Using Google Gemini:
+docker run --rm \
+  -e GEMINI_API_KEY="AIzaSy..." \
+  -v /path/to/target/repo:/repo \
+  -v $(pwd)/output:/output \
+  buildcwnelson/rca-agent:latest \
+  investigate --commit <hash> --path /repo --pdf /output/report.pdf
+
+# Using your existing .env file:
+docker run --rm \
+  --env-file .env \
   -v /path/to/target/repo:/repo \
   -v $(pwd)/output:/output \
   buildcwnelson/rca-agent:latest \

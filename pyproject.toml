@@ -18,6 +18,7 @@ dependencies = [
     "pluggy>=1.6.0",
     "gitpython>=3.1.0",
     "google-genai>=1.0.0",
+    "openai>=1.0.0",
     "python-dotenv>=1.0.0",
     "reportlab>=4.0.0",
 ]

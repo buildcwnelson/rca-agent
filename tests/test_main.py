@@ -111,7 +111,10 @@ class TestInvestigateCLI:
             assert result.exit_code == 0
             mock_set_path.assert_called_once_with(str(tmp_path.resolve()))
             mock_investigate.assert_called_once_with(
-                commit_hash="deadbeef", model_id="gemini-2.5-pro", api_key="custom-cli-key"
+                commit_hash="deadbeef",
+                model_id="gemini-2.5-pro",
+                api_key="custom-cli-key",
+                provider="gemini",
             )
             assert "BLAMELESS ROOT CAUSE ANALYSIS POSTMORTEM" in result.output
             assert "Payment gateway timeout" in result.output
