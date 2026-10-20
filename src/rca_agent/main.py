@@ -140,11 +140,11 @@ def investigate(
         "-p",
         help="Path to the target Git repository root.",
     ),
-    model: str = typer.Option(
-        "gemini-2.5-flash",
+    model: str | None = typer.Option(
+        None,
         "--model",
         "-m",
-        help="Google Gemini model identifier from Google AI Studio (e.g. gemini-2.5-flash, gemini-2.5-pro).",
+        help="Gemini model (e.g. gemini-2.0-flash, gemini-2.5-pro). Defaults to GEMINI_MODEL env var.",
     ),
     api_key: str | None = typer.Option(
         None,
@@ -168,6 +168,7 @@ def investigate(
         raise typer.Exit(code=1)
 
     resolved_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    resolved_model = model or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     if not resolved_key:
         console.print(
             "[bold yellow]Notice:[/bold yellow] No GEMINI_API_KEY or GOOGLE_API_KEY detected in your environment or .env file.\n"
@@ -178,7 +179,7 @@ def investigate(
         f"[bold blue]Initiating RCA investigation for commit:[/bold blue] [cyan]{commit}[/cyan]"
     )
     console.print(f"[dim]Repository:[/dim] {repo_path}")
-    console.print(f"[dim]Reasoning Model:[/dim] {model}\n")
+    console.print(f"[dim]Reasoning Model:[/dim] {resolved_model}\n")
 
     try:
         set_repo_path(str(repo_path))
@@ -192,7 +193,9 @@ def investigate(
         "[bold green]Executing Git forensics and 5 Whys analysis...", spinner="dots"
     ):
         try:
-            rca_result = run_investigation(commit_hash=commit, model_id=model, api_key=resolved_key)
+            rca_result = run_investigation(
+                commit_hash=commit, model_id=resolved_model, api_key=resolved_key
+            )
         except Exception as exc:
             console.print(f"\n[bold red]Investigation Failed:[/bold red] {exc}")
             raise typer.Exit(code=1) from exc
@@ -207,7 +210,7 @@ def investigate(
                 output_path=pdf_file,
                 commit_hash=commit,
                 repo_name=repo_path.name,
-                model_name=model,
+                model_name=resolved_model,
             )
             console.print(
                 f"[bold green]✓ Executive PDF report generated:[/bold green] [cyan]{pdf_file}[/cyan]\n"

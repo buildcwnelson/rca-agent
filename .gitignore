@@ -13,4 +13,7 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
-TEMP_PROJECT_EXPLANATION.md
+TEMP_*.md
+output/
+*.pdf
+.DS_Store

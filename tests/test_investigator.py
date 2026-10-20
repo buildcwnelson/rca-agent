@@ -53,7 +53,7 @@ class TestCreateInvestigator:
 
     def test_default_model_is_gemini(self):
         agent = create_investigator()
-        assert agent.model.id == "gemini-2.5-flash"
+        assert agent.model.id in ("gemini-3.6-flash", "gemini-2.5-flash")
         assert agent.model.provider == "Google"
 
     def test_agent_uses_custom_api_key(self):

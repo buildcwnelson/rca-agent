@@ -63,7 +63,7 @@ framework, and generate actionable preventative guardrails.
 
 
 def create_investigator(
-    model_id: str = "gemini-2.5-flash",
+    model_id: str | None = None,
     api_key: str | None = None,
 ) -> Agent:
     """Create and return a configured investigator agent.
@@ -71,7 +71,8 @@ def create_investigator(
     Parameters
     ----------
     model_id:
-        Gemini model identifier (e.g. ``gemini-2.5-flash``, ``gemini-2.5-pro``, ``gemini-2.0-flash``).
+        Gemini model identifier (e.g. ``gemini-3.6-flash``, ``gemini-2.5-pro``).
+        Defaults to the ``GEMINI_MODEL`` environment variable, then ``gemini-3.6-flash``.
     api_key:
         Optional Google AI Studio API key. Defaults to the ``GEMINI_API_KEY``
         or ``GOOGLE_API_KEY`` environment variable.
@@ -81,8 +82,9 @@ def create_investigator(
     Agent
         A fully configured Agno agent ready to run investigations.
     """
+    resolved_model = model_id or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     resolved_api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    model_kwargs: dict[str, str] = {"id": model_id}
+    model_kwargs: dict[str, str] = {"id": resolved_model}
     if resolved_api_key:
         model_kwargs["api_key"] = resolved_api_key
 
@@ -98,7 +100,7 @@ def create_investigator(
 
 def run_investigation(
     commit_hash: str,
-    model_id: str = "gemini-2.5-flash",
+    model_id: str | None = None,
     api_key: str | None = None,
 ) -> BlamelessRCA:
     """Run a full investigation and return the structured postmortem.
