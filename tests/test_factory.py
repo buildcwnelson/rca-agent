@@ -72,11 +72,11 @@ class TestCreateModelInstance:
     def test_create_gemini_model(self):
         model = create_model_instance(
             provider="gemini",
-            model_id="gemini-3.6-flash",
+            model_id="gemini-2.0-flash",
             api_key="test-key",
         )
         assert isinstance(model, Gemini)
-        assert model.id == "gemini-3.6-flash"
+        assert model.id == "gemini-2.0-flash"
 
     def test_create_openrouter_model(self):
         model = create_model_instance(
