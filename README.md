@@ -42,6 +42,19 @@ rca-agent investigate --commit <hash> --path /path/to/repo
 rca-agent investigate --commit <hash> --path /path/to/repo --pdf ./report.pdf
 ```
 
+### Docker Quickstart (Zero-Install)
+
+Run investigations on any local repository using Docker without needing Python or local dependencies:
+
+```bash
+docker run --rm \
+  -e GEMINI_API_KEY="your-gemini-api-key" \
+  -v /path/to/target/repo:/repo \
+  -v $(pwd)/output:/output \
+  buildcwnelson/rca-agent:latest \
+  investigate --commit <hash> --path /repo --pdf /output/report.pdf
+```
+
 ### As a Plugin
 
 ```python

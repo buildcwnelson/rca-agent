@@ -132,9 +132,17 @@ def run_investigation(
     if isinstance(result.content, BlamelessRCA):
         return result.content
 
-    # Fallback: attempt to parse from the raw content string
+    # Fallback: attempt to parse from raw content string
     if isinstance(result.content, str):
-        return BlamelessRCA.model_validate_json(result.content)
+        try:
+            return BlamelessRCA.model_validate_json(result.content)
+        except Exception:
+            raise RuntimeError(f"Agent response could not be parsed as RCA schema: {result.content}")
 
     # Final fallback: try dict-based construction
-    return BlamelessRCA.model_validate(result.content)
+    try:
+        return BlamelessRCA.model_validate(result.content)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to generate structured postmortem (provider response: {result.content})"
+        ) from exc
